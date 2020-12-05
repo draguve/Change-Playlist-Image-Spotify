@@ -31,30 +31,28 @@ func main(){
 	store := cookie.NewStore([]byte("pioneer123"))
 	r.Use(sessions.Sessions("mysession", store))
 
-	r.GET("/",index)
 	r.GET("/callback",completeAuth)
+	r.GET("/",VerifyLogin(),index)
 
 	//start server
-	r.Run(":8080")
+	err = r.Run(":8080")
+	if err != nil{
+		log.Fatalf(err.Error())
+	}
 }
 
 func index(c *gin.Context){
-	session := sessions.Default(c)
-	Token := session.Get("Token")
-	if Token == nil{
-		//need to login
-		url := auth.AuthURL(state)
-		c.Redirect(http.StatusTemporaryRedirect, url)
-		return
-	}
-	var token oauth2.Token
-	err := json.Unmarshal(Token.([]byte), &token)
-	if err != nil {
-		c.String(http.StatusBadGateway,"couldn't unmarshal token")
-		return
-	}
+	token := c.MustGet("Token").(oauth2.Token)
 	client := auth.NewClient(&token)
-	user, _ := client.CurrentUser()
+	user,e := client.CurrentUser()
+	if e != nil{
+		session := sessions.Default(c)
+		session.Set("Token",[]byte{})
+		_ = session.Save()
+		c.Redirect(http.StatusTemporaryRedirect,auth.AuthURL(state))
+		log.Println(e)
+		return
+	}
 	c.String(http.StatusOK,user.ID)
 }
 
@@ -76,3 +74,28 @@ func completeAuth(c *gin.Context){
 	}
 	c.Redirect(http.StatusTemporaryRedirect,"/")
 }
+
+func VerifyLogin() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		session := sessions.Default(c)
+		Token := session.Get("Token")
+		if Token == nil{
+			//need to login
+			c.Redirect(http.StatusTemporaryRedirect, auth.AuthURL(state))
+			c.AbortWithStatus(http.StatusTemporaryRedirect)
+			return
+		}
+		var token oauth2.Token
+		err := json.Unmarshal(Token.([]byte), &token)
+		if err != nil {
+			session.Set("Token",[]int{})
+			_ = session.Save()
+			c.Redirect(http.StatusTemporaryRedirect,auth.AuthURL(state))
+			c.AbortWithStatus(http.StatusTemporaryRedirect)
+			return
+		}
+		c.Set("Token",token)
+		c.Next()
+	}
+}
+
