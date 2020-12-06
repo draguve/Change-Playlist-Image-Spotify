@@ -2,10 +2,13 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/joho/godotenv"
+	"github.com/CloudyKit/jet"
+	"github.com/alexsasharegan/dotenv"
 	"golang.org/x/oauth2"
 	"log"
 	"net/http"
+	"os"
+	"time"
 
 	"github.com/zmb3/spotify"
 
@@ -17,18 +20,21 @@ import (
 const redirectURI = "http://localhost:8080/callback"
 
 var (
-	auth  = spotify.NewAuthenticator(redirectURI, spotify.ScopeUserReadPrivate)
+	auth  = spotify.NewAuthenticator(redirectURI,spotify.ScopeImageUpload, spotify.ScopePlaylistModifyPublic,spotify.ScopePlaylistModifyPrivate)
 	state = "abc123"
+	views = jet.NewSet(jet.NewOSFileSystemLoader("./templates"))
 )
 
 func main(){
-	err := godotenv.Load()
-	if err != nil{
-		log.Fatalf(err.Error())
+	err := dotenv.Load()
+	if err != nil {
+		log.Fatalf("Error loading .env file: %v", err)
 	}
+	auth.SetAuthInfo(os.Getenv("SPOTIFY_ID"),os.Getenv("SPOTIFY_SECRET"))
 
 	r := gin.Default()
 	store := cookie.NewStore([]byte("pioneer123"))
+
 	r.Use(sessions.Sessions("mysession", store))
 
 	r.GET("/callback",completeAuth)
@@ -42,6 +48,8 @@ func main(){
 }
 
 func index(c *gin.Context){
+	t, _ := views.GetTemplate("index.jet")
+	vars := make(jet.VarMap)
 	token := c.MustGet("Token").(oauth2.Token)
 	client := auth.NewClient(&token)
 	user,e := client.CurrentUser()
@@ -53,7 +61,16 @@ func index(c *gin.Context){
 		log.Println(e)
 		return
 	}
-	c.String(http.StatusOK,user.ID)
+	playlists, e := client.GetPlaylistsForUser(user.ID)
+	if e!= nil {
+		log.Println(e)
+	}
+	vars.Set("playlists",playlists.Playlists)
+	c.Writer.WriteHeader(200)
+	if err := t.Execute(c.Writer, vars, nil); err != nil {
+		log.Println(user.ID)
+	}
+	//c.String(http.StatusOK,user.ID)
 }
 
 func completeAuth(c *gin.Context){
@@ -88,6 +105,14 @@ func VerifyLogin() gin.HandlerFunc {
 		var token oauth2.Token
 		err := json.Unmarshal(Token.([]byte), &token)
 		if err != nil {
+			session.Set("Token",[]int{})
+			_ = session.Save()
+			c.Redirect(http.StatusTemporaryRedirect,auth.AuthURL(state))
+			c.AbortWithStatus(http.StatusTemporaryRedirect)
+			return
+		}
+		if time.Now().After(token.Expiry) {
+			//token has expired
 			session.Set("Token",[]int{})
 			_ = session.Save()
 			c.Redirect(http.StatusTemporaryRedirect,auth.AuthURL(state))
