@@ -39,6 +39,7 @@ func main(){
 
 	r.GET("/callback",completeAuth)
 	r.GET("/",VerifyLogin(),index)
+	r.GET("/test",test)
 
 	//start server
 	err = r.Run(":8080")
@@ -47,8 +48,16 @@ func main(){
 	}
 }
 
+func test(c *gin.Context){
+	t, _ := views.GetTemplate("index.jet.html")
+	c.Writer.WriteHeader(200)
+	if err := t.Execute(c.Writer, nil, nil); err != nil {
+		log.Println(err)
+	}
+}
+
 func index(c *gin.Context){
-	t, _ := views.GetTemplate("index.jet")
+	t, _ := views.GetTemplate("index.jet.html")
 	vars := make(jet.VarMap)
 	token := c.MustGet("Token").(oauth2.Token)
 	client := auth.NewClient(&token)
