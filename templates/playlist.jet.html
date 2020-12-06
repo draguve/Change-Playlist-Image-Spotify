@@ -28,7 +28,7 @@
                     </div>
                 </div>
                 <div class="col s12 m8">
-                    <div class="card blue-grey darken-1">
+                    <div class="card blue darken-2">
                         <div class="card-content white-text">
                             <span class="card-title">Songs</span>
                             <table class="highlight">
@@ -46,11 +46,11 @@
                                     <td>{{ .Track.Artists[0].Name }}</td>
                                 </tr>
                                 {{ end }}
-                                <tr>
-                                    <td>And More?</td>
-                                </tr>
                                 </tbody>
                             </table>
+                        </div>
+                        <div class="card-action">
+                            <a href="https://open.spotify.com/playlist/{{ playlist.ID }}">More information at Spotify</a>
                         </div>
                     </div>
                 </div>
@@ -74,15 +74,15 @@
 </main>
 {{end}}
 
-{{ block head() }}
+{{block header()}}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.9/cropper.min.css">
 <style>
     .modal { width: 90% !important ; height: 90% !important ; }
 
 </style>
-{{ end }}
+{{end}}
 
-{{ block footer() }}
+{{block footer()}}
 <script src="https://unpkg.com/jquery@3/dist/jquery.min.js" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.9/cropper.min.js"></script>
 <script>
@@ -178,4 +178,4 @@
         });
     });
 </script>
-{{ end }}
+{{end}}

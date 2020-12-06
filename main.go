@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/zmb3/spotify"
@@ -54,6 +55,14 @@ func main(){
 func index(c *gin.Context){
 	t, _ := views.GetTemplate("index.jet.html")
 	vars := make(jet.VarMap)
+
+	pageNumberString := c.DefaultQuery("page", "0")
+	page, err := strconv.Atoi(pageNumberString)
+	if err != nil{
+		page = 0
+	}
+	vars.Set("page",page)
+
 	token := c.MustGet("Token").(oauth2.Token)
 	client := auth.NewClient(&token)
 	user,e := client.CurrentUser()
@@ -65,7 +74,11 @@ func index(c *gin.Context){
 		log.Println(e)
 		return
 	}
-	playlists, e := client.GetPlaylistsForUser(user.ID)
+	page = page*20
+	opts := spotify.Options{
+		Offset: &page,
+	}
+	playlists, e := client.GetPlaylistsForUserOpt(user.ID,&opts)
 	if e!= nil {
 		session := sessions.Default(c)
 		session.Set("Token",[]byte{})
