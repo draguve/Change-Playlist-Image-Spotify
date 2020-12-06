@@ -38,21 +38,13 @@ func main(){
 	r.Use(sessions.Sessions("mysession", store))
 
 	r.GET("/callback",completeAuth)
-	r.GET("/",VerifyLogin(),index)
-	r.GET("/test",test)
+	r.GET("/",VerifyLogin,index)
+	r.GET("/playlist/:id",VerifyLogin,playlist)
 
 	//start server
 	err = r.Run(":8080")
 	if err != nil{
 		log.Fatalf(err.Error())
-	}
-}
-
-func test(c *gin.Context){
-	t, _ := views.GetTemplate("index.jet.html")
-	c.Writer.WriteHeader(200)
-	if err := t.Execute(c.Writer, nil, nil); err != nil {
-		log.Println(err)
 	}
 }
 
@@ -72,14 +64,41 @@ func index(c *gin.Context){
 	}
 	playlists, e := client.GetPlaylistsForUser(user.ID)
 	if e!= nil {
+		session := sessions.Default(c)
+		session.Set("Token",[]byte{})
+		_ = session.Save()
+		c.Redirect(http.StatusTemporaryRedirect,auth.AuthURL(state))
 		log.Println(e)
+		return
 	}
 	vars.Set("playlists",playlists.Playlists)
 	c.Writer.WriteHeader(200)
 	if err := t.Execute(c.Writer, vars, nil); err != nil {
-		log.Println(user.ID)
+		log.Println(err)
 	}
 	//c.String(http.StatusOK,user.ID)
+}
+
+func playlist(c *gin.Context){
+	t, _ := views.GetTemplate("playlist.jet.html")
+	vars := make(jet.VarMap)
+	token := c.MustGet("Token").(oauth2.Token)
+	client := auth.NewClient(&token)
+	id := c.Param("id")
+	playlist, e := client.GetPlaylist(spotify.ID(id))
+	if e != nil{
+		session := sessions.Default(c)
+		session.Set("Token",[]byte{})
+		_ = session.Save()
+		c.Redirect(http.StatusTemporaryRedirect,auth.AuthURL(state))
+		log.Println(e)
+		return
+	}
+	vars.Set("playlist",playlist)
+	c.Writer.WriteHeader(200)
+	if err := t.Execute(c.Writer, vars, nil); err != nil {
+		log.Println(err)
+	}
 }
 
 func completeAuth(c *gin.Context){
@@ -101,35 +120,32 @@ func completeAuth(c *gin.Context){
 	c.Redirect(http.StatusTemporaryRedirect,"/")
 }
 
-func VerifyLogin() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		session := sessions.Default(c)
-		Token := session.Get("Token")
-		if Token == nil{
-			//need to login
-			c.Redirect(http.StatusTemporaryRedirect, auth.AuthURL(state))
-			c.AbortWithStatus(http.StatusTemporaryRedirect)
-			return
-		}
-		var token oauth2.Token
-		err := json.Unmarshal(Token.([]byte), &token)
-		if err != nil {
-			session.Set("Token",[]int{})
-			_ = session.Save()
-			c.Redirect(http.StatusTemporaryRedirect,auth.AuthURL(state))
-			c.AbortWithStatus(http.StatusTemporaryRedirect)
-			return
-		}
-		if time.Now().After(token.Expiry) {
-			//token has expired
-			session.Set("Token",[]int{})
-			_ = session.Save()
-			c.Redirect(http.StatusTemporaryRedirect,auth.AuthURL(state))
-			c.AbortWithStatus(http.StatusTemporaryRedirect)
-			return
-		}
-		c.Set("Token",token)
-		c.Next()
+func VerifyLogin(c *gin.Context) {
+	session := sessions.Default(c)
+	Token := session.Get("Token")
+	if Token == nil{
+		//need to login
+		c.Redirect(http.StatusTemporaryRedirect, auth.AuthURL(state))
+		c.AbortWithStatus(http.StatusTemporaryRedirect)
+		return
 	}
+	var token oauth2.Token
+	err := json.Unmarshal(Token.([]byte), &token)
+	if err != nil {
+		session.Set("Token",[]int{})
+		_ = session.Save()
+		c.Redirect(http.StatusTemporaryRedirect,auth.AuthURL(state))
+		c.AbortWithStatus(http.StatusTemporaryRedirect)
+		return
+	}
+	if time.Now().After(token.Expiry) {
+		//token has expired
+		session.Set("Token",[]int{})
+		_ = session.Save()
+		c.Redirect(http.StatusTemporaryRedirect,auth.AuthURL(state))
+		c.AbortWithStatus(http.StatusTemporaryRedirect)
+		return
+	}
+	c.Set("Token",token)
+	c.Next()
 }
-
