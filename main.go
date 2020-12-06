@@ -33,6 +33,7 @@ func main(){
 	auth.SetAuthInfo(os.Getenv("SPOTIFY_ID"),os.Getenv("SPOTIFY_SECRET"))
 
 	r := gin.Default()
+	r.MaxMultipartMemory = 1 << 20  // 8 MiB
 	store := cookie.NewStore([]byte("pioneer123"))
 
 	r.Use(sessions.Sessions("mysession", store))
@@ -40,6 +41,8 @@ func main(){
 	r.GET("/callback",completeAuth)
 	r.GET("/",VerifyLogin,index)
 	r.GET("/playlist/:id",VerifyLogin,playlist)
+
+	r.POST("/playlist/:id",VerifyLogin,uploadHandle)
 
 	//start server
 	err = r.Run(":8080")
@@ -76,7 +79,6 @@ func index(c *gin.Context){
 	if err := t.Execute(c.Writer, vars, nil); err != nil {
 		log.Println(err)
 	}
-	//c.String(http.StatusOK,user.ID)
 }
 
 func playlist(c *gin.Context){
@@ -99,6 +101,26 @@ func playlist(c *gin.Context){
 	if err := t.Execute(c.Writer, vars, nil); err != nil {
 		log.Println(err)
 	}
+}
+
+func uploadHandle(c *gin.Context){
+	token := c.MustGet("Token").(oauth2.Token)
+	client := auth.NewClient(&token)
+	id := c.Param("id")
+	fileHeader, err := c.FormFile("avatar")
+	if err != nil{
+		c.String(http.StatusInternalServerError,"file read error")
+		log.Println(err)
+		return
+	}
+	file, err := fileHeader.Open()
+	err = client.SetPlaylistImage(spotify.ID(id),file)
+	if err != nil{
+		c.String(http.StatusInternalServerError,"upload error")
+		log.Println(err)
+		return
+	}
+	c.String(200,"Upload Success")
 }
 
 func completeAuth(c *gin.Context){
@@ -132,7 +154,7 @@ func VerifyLogin(c *gin.Context) {
 	var token oauth2.Token
 	err := json.Unmarshal(Token.([]byte), &token)
 	if err != nil {
-		session.Set("Token",[]int{})
+		session.Set("Token",[]byte{})
 		_ = session.Save()
 		c.Redirect(http.StatusTemporaryRedirect,auth.AuthURL(state))
 		c.AbortWithStatus(http.StatusTemporaryRedirect)
@@ -140,7 +162,7 @@ func VerifyLogin(c *gin.Context) {
 	}
 	if time.Now().After(token.Expiry) {
 		//token has expired
-		session.Set("Token",[]int{})
+		session.Set("Token",[]byte{})
 		_ = session.Save()
 		c.Redirect(http.StatusTemporaryRedirect,auth.AuthURL(state))
 		c.AbortWithStatus(http.StatusTemporaryRedirect)

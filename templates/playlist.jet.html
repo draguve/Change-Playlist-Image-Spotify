@@ -54,29 +54,6 @@
             <button type="button" class="btn waves-effect waves-light" id="crop">Crop</button>
         </div>
     </div>
-
-
-<!--    <div class="modal fade" id="modal" tabindex="-1" role="dialog" aria-labelledby="modalLabel" aria-hidden="true">-->
-<!--        <div class="modal-dialog" role="document">-->
-<!--            <div class="modal-content">-->
-<!--                <div class="modal-header">-->
-<!--                    <h5 class="modal-title" id="modalLabel">Crop the image</h5>-->
-<!--                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">-->
-<!--                        <span aria-hidden="true">&times;</span>-->
-<!--                    </button>-->
-<!--                </div>-->
-<!--                <div class="modal-body">-->
-<!--                    <div class="img-container">-->
-<!--                        <img id="image" src="https://avatars0.githubusercontent.com/u/3456749">-->
-<!--                    </div>-->
-<!--                </div>-->
-<!--                <div class="modal-footer">-->
-<!--                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>-->
-<!--
-<!--                </div>-->
-<!--            </div>-->
-<!--        </div>-->
-<!--    </div>-->
 </main>
 {{end}}
 
@@ -150,16 +127,16 @@
             var canvas;
 
             if (cropper) {
-                console.log("here");
                 canvas = cropper.getCroppedCanvas({
-                    width: 256,
-                    height: 256,
+                    width: 512,
+                    height: 512,
                 });
                 initialAvatarURL = avatar.src;
                 avatar.src = canvas.toDataURL();
                 $progress.show();
                 $alert.removeClass('alert-success alert-warning');
                 canvas.toBlob(function (blob) {
+                    console.log(blob.size)
                     var formData = new FormData();
 
                     formData.append('avatar', blob, 'avatar.jpg');
@@ -200,7 +177,7 @@
                         },
                     });
                     modal.close();
-                });
+                },"image/jpeg",0.8);
             }
         });
     });
