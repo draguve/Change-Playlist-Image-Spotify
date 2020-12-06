@@ -39,6 +39,7 @@ func main(){
 
 	r.Use(sessions.Sessions("mysession", store))
 
+	r.StaticFile("/favicon.ico", "./favicon.ico")
 	r.GET("/callback",completeAuth)
 	r.GET("/",VerifyLogin,index)
 	r.GET("/playlist/:id",VerifyLogin,playlist)

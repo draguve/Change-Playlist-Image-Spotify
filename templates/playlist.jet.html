@@ -89,6 +89,13 @@
     var cropper;
 
     window.addEventListener('DOMContentLoaded', function () {
+
+
+        if (localStorage.getItem("helpToast") === null) {
+            M.toast({html: 'Click The Image To Change The Image'})
+            localStorage.setItem("helpToast", true);
+        }
+
         var avatar = document.getElementById('avatar');
         var image = document.getElementById('image');
         var input = document.getElementById('input');

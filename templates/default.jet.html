@@ -22,24 +22,27 @@
             flex: 1 0 auto;
         }
     </style>
-    <title>Spotify</title>
+    <title>Spotify PIC</title>
 </head>
 
 <body>
 <header>
     <nav class="light-blue lighten-1" role="navigation">
         <div class="nav-wrapper container">
-            <a id="logo-container" href="#" class="brand-logo">Spotify PIC</a>
+            <a id="logo-container" href="/" class="brand-logo">Spotify PIC</a>
             <ul class="right hide-on-med-and-down">
                 <li>
-                    <a href="#">Navbar Link</a>
+                    <a href="/">Home</a>
                 </li>
             </ul>
 
             <ul id="nav-mobile" class="sidenav">
-                <li>
-                    <a href="#">Navbar Link</a>
-                </li>
+                <li style="margin-top: 2em"><a href="#">Home</a></li>
+                <li><div class="divider"></div></li>
+                <li><a href="https://github.com/draguve" title="Github">Github</a></li>
+                <li><a href="https://www.instagram.com/draguve/" title="Instagram">Instagram</a></li>
+                <li><a href="https://twitter.com/draguve" title="Twitter">Twitter</a></li>
+                <li><a href="https://draguve.wtf" title="Website">Website</a></li>
             </ul>
             <a href="#" data-target="nav-mobile" class="sidenav-trigger">
                 <i class="material-icons">menu</i>
@@ -58,6 +61,7 @@
                 <a href="https://github.com/draguve" title="Github"><i class="fa fa-github" style="color:white"></i></a>
                 <a href="https://www.instagram.com/draguve/" title="Instagram"><i class="fa fa-instagram" style="color:white"></i></a>
                 <a href="https://twitter.com/draguve" title="Twitter"><i class="fa fa-twitter" style="color:white"></i></a>
+                <a href="https://draguve.wtf" title="Website"><i class="fa fa-paper-plane" style="color:white"></i></a>
             </div>
 
         </div>
@@ -69,8 +73,9 @@
 
 {{ yield footer()}}
 <script>
-    $(document).ready(function(){
-        $('.sidenav').sidenav();
+    document.addEventListener('DOMContentLoaded', function() {
+        var elems = document.querySelectorAll('.sidenav');
+        var instances = M.Sidenav.init(elems, null);
     });
 </script>
 </body>
