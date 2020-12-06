@@ -4,35 +4,205 @@
     <div class="container">
         <div class="section">
             <div class="row" style="margin-top: 2em;">
-                <div class="col s12 m2"></div>
-                <div class="col s12 m8">
+                <div class="col s12 m4">
                     <div class="row">
-                        <div class="col s12" method='post'>
+                        <div class="col s12">
                             <center style="padding-bottom: 2em;">
                                 <h5 class="indigo-text"></h5>
                             </center>
                             <div class="row">
                                 <div class="card">
                                     <div class="card-image">
-                                        <img src='{{ len(playlist.Images) > 0 ? playlist.Images[0].URL : "TEST" }}'>
+                                        <label class="label" data-toggle="tooltip" title="Change image">
+                                            <img class="rounded" id="avatar" src='{{ len(playlist.Images) > 0 ? playlist.Images[0].URL : "TEST" }}' alt="avatar" style="max-width: 100%">
+                                            <input type="file" class="sr-only" id="input" name="image" accept="image/*">
+                                        </label>
                                     </div>
                                     <div class="card-content">
                                         <span class="card-title">{{ playlist.Name }}</span>
                                         <p>{{ playlist.Description }}</p>
                                     </div>
                                     <div class="card-action">
-                                        <a href="{{ playlist.URI }}">Open on Spotify</a>
+                                        <a href="https://open.spotify.com/playlist/{{ playlist.ID }}">Open on Spotify</a>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+                </div>
+                <div class="col s12 m8">
 
                 </div>
-                <div class="col s12 m2"></div>
             </div>
             <br><br>
         </div>
     </div>
+    <div class="progress">
+        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+    </div>
+    <div class="alert" role="alert"></div>
+
+    <div id="cropmodal" class="modal">
+        <div class="modal-content">
+            <h4>Modal Change Image</h4>
+            <div class="img-container">
+                <img class="responsive-img" id="image" src="https://avatars0.githubusercontent.com/u/3456749" style="max-height:30em ;display: block">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <a href="#!" class="modal-close waves-effect waves-green btn-flat">Cancel</a>
+            <button type="button" class="btn waves-effect waves-light" id="crop">Crop</button>
+        </div>
+    </div>
+
+
+<!--    <div class="modal fade" id="modal" tabindex="-1" role="dialog" aria-labelledby="modalLabel" aria-hidden="true">-->
+<!--        <div class="modal-dialog" role="document">-->
+<!--            <div class="modal-content">-->
+<!--                <div class="modal-header">-->
+<!--                    <h5 class="modal-title" id="modalLabel">Crop the image</h5>-->
+<!--                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">-->
+<!--                        <span aria-hidden="true">&times;</span>-->
+<!--                    </button>-->
+<!--                </div>-->
+<!--                <div class="modal-body">-->
+<!--                    <div class="img-container">-->
+<!--                        <img id="image" src="https://avatars0.githubusercontent.com/u/3456749">-->
+<!--                    </div>-->
+<!--                </div>-->
+<!--                <div class="modal-footer">-->
+<!--                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>-->
+<!--
+<!--                </div>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--    </div>-->
 </main>
 {{end}}
+
+{{ block head() }}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.9/cropper.min.css">
+<style>
+    .modal { width: 90% !important ; height: 90% !important ; }
+
+</style>
+{{ end }}
+
+{{ block footer() }}
+<script src="https://unpkg.com/jquery@3/dist/jquery.min.js" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.9/cropper.min.js"></script>
+<script>
+    var cropper;
+    window.addEventListener('DOMContentLoaded', function () {
+        var avatar = document.getElementById('avatar');
+        var image = document.getElementById('image');
+        var input = document.getElementById('input');
+        var $progress = $('.progress');
+        var $progressBar = $('.progress-bar');
+        var $alert = $('.alert');
+
+
+        var elems = document.querySelectorAll('.modal');
+        const optionsModal = {
+            onOpenEnd: () => {
+                cropper = new Cropper(image, {
+                    aspectRatio: 1,
+                    viewMode: 2,
+                });
+            },
+            onCloseStart: () => {
+                cropper.destroy();
+                cropper = null;
+            },
+        }
+        var instances = M.Modal.init(elems, optionsModal);
+        var modal = instances[0];
+
+        input.addEventListener('change', function (e) {
+            var files = e.target.files;
+            var done = function (url) {
+                input.value = '';
+                image.src = url;
+                $alert.hide();
+                modal.open()
+            };
+            var reader;
+            var file;
+            var url;
+
+            if (files && files.length > 0) {
+                file = files[0];
+
+                if (URL) {
+                    done(URL.createObjectURL(file));
+                } else if (FileReader) {
+                    reader = new FileReader();
+                    reader.onload = function (e) {
+                        done(reader.result);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+        });
+
+        document.getElementById('crop').addEventListener('click', function () {
+            var initialAvatarURL;
+            var canvas;
+
+            if (cropper) {
+                console.log("here");
+                canvas = cropper.getCroppedCanvas({
+                    width: 256,
+                    height: 256,
+                });
+                initialAvatarURL = avatar.src;
+                avatar.src = canvas.toDataURL();
+                $progress.show();
+                $alert.removeClass('alert-success alert-warning');
+                canvas.toBlob(function (blob) {
+                    var formData = new FormData();
+
+                    formData.append('avatar', blob, 'avatar.jpg');
+                    $.ajax(window.location.pathname, {
+                        method: 'POST',
+                        data: formData,
+                        processData: false,
+                        contentType: false,
+
+                        xhr: function () {
+                            var xhr = new XMLHttpRequest();
+
+                            xhr.upload.onprogress = function (e) {
+                                var percent = '0';
+                                var percentage = '0%';
+
+                                if (e.lengthComputable) {
+                                    percent = Math.round((e.loaded / e.total) * 100);
+                                    percentage = percent + '%';
+                                    $progressBar.width(percentage).attr('aria-valuenow', percent).text(percentage);
+                                }
+                            };
+
+                            return xhr;
+                        },
+
+                        success: function () {
+                            $alert.show().addClass('alert-success').text('Upload success');
+                        },
+
+                        error: function () {
+                            avatar.src = initialAvatarURL;
+                            $alert.show().addClass('alert-warning').text('Upload error');
+                        },
+
+                        complete: function () {
+                            $progress.hide();
+                        },
+                    });
+                    modal.close();
+                });
+            }
+        });
+    });
+</script>
+{{ end }}

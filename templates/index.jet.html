@@ -1,4 +1,11 @@
 {{extends "./default.jet.html"}}
+
+{{block head()}}
+{{ end }}
+
+{{block footer()}}
+{{ end }}
+
 {{block body()}}
 <main>
     <div class="container">
@@ -24,7 +31,7 @@
                                         </div>
                                         <div class="card-action">
                                             <a href="/playlist/{{ .ID }}">Change Image</a>
-                                            <a href="{{ .URI }}">Open on Spotify</a>
+                                            <a href="https://open.spotify.com/playlist/{{ .ID }}">Open on Spotify</a>
                                         </div>
                                     </div>
                                 </div>
