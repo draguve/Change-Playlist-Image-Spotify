@@ -18,10 +18,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-const redirectURI = "http://localhost:8080/callback"
-
 var (
-	auth  = spotify.NewAuthenticator(redirectURI,spotify.ScopeImageUpload, spotify.ScopePlaylistModifyPublic,spotify.ScopePlaylistModifyPrivate)
+	auth spotify.Authenticator
 	state = "abc123"
 	views = jet.NewHTMLSet("./templates")
 )
@@ -32,6 +30,9 @@ func main(){
 	if err != nil {
 		log.Println("Error loading .env file: %v", err)
 	}
+
+	redirectURI := os.Getenv("SPOTIFY_REDIRECT")
+	auth = spotify.NewAuthenticator(redirectURI,spotify.ScopeImageUpload, spotify.ScopePlaylistModifyPublic,spotify.ScopePlaylistModifyPrivate)
 	auth.SetAuthInfo(os.Getenv("SPOTIFY_ID"),os.Getenv("SPOTIFY_SECRET"))
 
 	r := gin.Default()
