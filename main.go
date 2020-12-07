@@ -23,11 +23,12 @@ const redirectURI = "http://localhost:8080/callback"
 var (
 	auth  = spotify.NewAuthenticator(redirectURI,spotify.ScopeImageUpload, spotify.ScopePlaylistModifyPublic,spotify.ScopePlaylistModifyPrivate)
 	state = "abc123"
-	views = jet.NewSet(jet.NewOSFileSystemLoader("./templates"))
+	views = jet.NewHTMLSet("./templates")
 )
 
 func main(){
 	err := dotenv.Load()
+
 	if err != nil {
 		log.Fatalf("Error loading .env file: %v", err)
 	}
@@ -35,7 +36,7 @@ func main(){
 
 	r := gin.Default()
 	r.MaxMultipartMemory = 1 << 20  // 8 MiB
-	store := cookie.NewStore([]byte("pioneer123"))
+	store := cookie.NewStore([]byte(os.Getenv("SPOTIFY_SESSION_SECRET")))
 
 	r.Use(sessions.Sessions("mysession", store))
 
@@ -47,7 +48,7 @@ func main(){
 	r.POST("/playlist/:id",VerifyLogin,uploadHandle)
 
 	//start server
-	err = r.Run(":8080")
+	err = r.Run(":"+os.Getenv("SPOTIFY_PORT"))
 	if err != nil{
 		log.Fatalf(err.Error())
 	}
