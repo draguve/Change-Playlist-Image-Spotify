@@ -48,7 +48,7 @@ func main(){
 	r.POST("/playlist/:id",VerifyLogin,uploadHandle)
 
 	//start server
-	err = r.Run(":"+os.Getenv("SPOTIFY_PORT"))
+	err = r.Run(":"+os.Getenv("PORT"))
 	if err != nil{
 		log.Fatalf(err.Error())
 	}
